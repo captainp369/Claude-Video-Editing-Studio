@@ -1,0 +1,28 @@
+# Private
+.env
+
+# User footage (add your own to raw_media/)
+raw_media/**
+!raw_media/.gitkeep
+
+# Project outputs
+video_projects/**
+!video_projects/.gitkeep
+
+# Skills — installed by setup, not stored in repo
+.claude/skills/video-use/
+.claude/skills/hyperframes/
+.claude/skills/hf-*
+
+# Dependencies
+node_modules/
+.venv/
+*.egg-info/
+dist/
+
+# OS
+.DS_Store
+._*
+**/.DS_Store
+**/._*
+.AppleDouble

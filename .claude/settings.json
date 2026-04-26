@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:github.com)",
+      "Bash(git clone *)",
+      "Bash(git -C * pull)",
+      "Bash(uv *)",
+      "Bash(bun *)",
+      "Bash(bunx hyperframes *)",
+      "Bash(npx --yes hyperframes@latest *)",
+      "Bash(ffmpeg *)",
+      "Bash(ffprobe *)",
+      "Bash(brew install *)",
+      "Bash(export COPYFILE_DISABLE=1*)",
+      "Bash(cp .env.example .env)",
+      "Bash(ln -sf *)",
+      "Bash(find * -name \"._*\" -delete)"
+    ]
+  }
+}
