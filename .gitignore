@@ -26,3 +26,17 @@ dist/
 **/.DS_Store
 **/._*
 .AppleDouble
+
+# Local model weights + caches (tools/local-asr/env.sh)
+.models/
+.cache/
+
+# Local tool environments and editor state
+.tts-venv/
+.serena/
+.claude/launch.json
+__pycache__/
+
+# video-styles: GSAP is fetched at setup (not redistributed); render logs hold local paths
+video-styles/_shared/gsap.min.js
+video-styles/renders/*.log

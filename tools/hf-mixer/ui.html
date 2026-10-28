@@ -1,0 +1,418 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>hf-mixer</title>
+<style>
+  :root {
+    --bg: #0b0b0c; --panel: #141416; --line: #26262a; --line2: #1c1c1f;
+    --txt: #e8e8ea; --dim: #8a8a92; --dim2: #5f5f68;
+    --accent: #5eead4; --warn: #fbbf24; --danger: #f87171; --ok: #4ade80;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--txt);
+    font: 12px/1.45 ui-sans-serif, -apple-system, "SF Pro Text", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  header {
+    position: sticky; top: 0; z-index: 5; background: rgba(11,11,12,.92);
+    backdrop-filter: blur(8px); border-bottom: 1px solid var(--line);
+    padding: 12px 18px; display: flex; align-items: center; gap: 14px;
+  }
+  .brand { font-weight: 700; letter-spacing: .04em; font-size: 13px; }
+  .brand span { color: var(--accent); }
+  .meta { color: var(--dim); font-size: 11px; }
+  .meta b { color: var(--txt); font-weight: 600; }
+  .spacer { flex: 1; }
+  button {
+    font: inherit; font-size: 11px; font-weight: 600; color: var(--txt);
+    background: #1e1e22; border: 1px solid var(--line); border-radius: 6px;
+    padding: 5px 10px; cursor: pointer;
+  }
+  button:hover { background: #26262b; border-color: #34343a; }
+  button:active { transform: translateY(1px); }
+  button.on { background: var(--accent); border-color: var(--accent); color: #06201c; }
+  button.danger:hover { border-color: var(--danger); color: var(--danger); }
+  button.ghost { background: transparent; }
+  main { padding: 18px; max-width: 1180px; }
+  .banner {
+    border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 11.5px;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  }
+  .banner.warn { background: rgba(251,191,36,.09); border: 1px solid rgba(251,191,36,.35); color: #f8dfa0; }
+  .banner.info { background: rgba(94,234,212,.07); border: 1px solid rgba(94,234,212,.28); color: #a6e9df; }
+  h2 {
+    font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase;
+    color: var(--dim2); font-weight: 700; margin: 22px 0 8px;
+  }
+  .card { background: var(--panel); border: 1px solid var(--line2); border-radius: 10px; overflow: hidden; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-top: 1px solid var(--line2); }
+  .row:first-child { border-top: 0; }
+  .row.dim { opacity: .45; }
+  .name { width: 132px; flex-shrink: 0; }
+  .name .id { font-weight: 600; font-family: ui-monospace, "SF Mono", monospace; font-size: 11px; }
+  .name .sub { color: var(--dim2); font-size: 10px; margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tag {
+    font-size: 9px; letter-spacing: .08em; text-transform: uppercase; font-weight: 700;
+    padding: 1px 5px; border-radius: 3px; background: #26262b; color: var(--dim);
+  }
+  .tag.audio { background: rgba(94,234,212,.14); color: var(--accent); }
+  .tag.video { background: rgba(167,139,250,.16); color: #c4b5fd; }
+  input[type=range] { -webkit-appearance: none; height: 4px; border-radius: 3px;
+    background: #2c2c32; outline: none; flex: 1; min-width: 90px; }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 13px; height: 13px; border-radius: 50%;
+    background: var(--accent); cursor: pointer; border: 2px solid #0b0b0c;
+  }
+  .num { display: flex; align-items: center; gap: 5px; }
+  .num label {
+    font-size: 10px; color: var(--dim2); font-weight: 600; cursor: ew-resize;
+    user-select: none; letter-spacing: .04em;
+  }
+  .num label:hover { color: var(--accent); }
+  .num input {
+    width: 54px; background: #191a1d; border: 1px solid var(--line); border-radius: 5px;
+    color: var(--txt); font: inherit; font-size: 11px; padding: 3px 6px; outline: none;
+    font-variant-numeric: tabular-nums;
+  }
+  .num input:focus { border-color: var(--accent); }
+  .num input:read-only { background: transparent; border-color: transparent; color: var(--dim); }
+  .lvl { width: 34px; text-align: right; color: var(--dim); font-variant-numeric: tabular-nums; font-size: 11px; }
+  .bar { position: relative; height: 16px; background: #191a1d; border-radius: 4px; flex: 1;
+    min-width: 120px; overflow: hidden; border: 1px solid var(--line2); }
+  .bar .fill { position: absolute; top: 0; bottom: 0; background: rgba(94,234,212,.3);
+    border-left: 2px solid var(--accent); }
+  .bar .fill.over { background: rgba(248,113,113,.28); border-left-color: var(--danger); }
+  .bar .edge { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--warn); opacity: .8; }
+  .ops { display: flex; gap: 5px; flex-shrink: 0; }
+  .empty { color: var(--dim2); padding: 16px 12px; font-style: italic; }
+  .toast {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: #1e1e22; border: 1px solid var(--line); border-radius: 8px;
+    padding: 8px 14px; font-size: 11.5px; opacity: 0; transition: opacity .18s; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.err { border-color: var(--danger); color: #fecaca; }
+  .hint { color: var(--dim2); font-size: 10.5px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">hf<span>·</span>mixer</div>
+  <div class="meta" id="meta">loading…</div>
+  <div class="spacer"></div>
+  <button class="ghost" id="undo">Undo</button>
+  <button class="ghost" id="refresh">Refresh</button>
+</header>
+
+<main>
+  <div id="banners"></div>
+
+  <h2>Audio mixer</h2>
+  <div class="card" id="mixer"></div>
+  <div class="hint">Volume writes <code>data-volume</code>. Mute remembers the prior level in <code>data-hf-prevol</code>, so un-mute restores it exactly. Solo mutes every other audio clip.</div>
+
+  <h2>Cut &amp; trim</h2>
+  <div class="card" id="clips"></div>
+  <div class="hint">Drag a field's <b>label</b> sideways to scrub, or type. Scroll never changes a value. <b>Fit</b> clamps duration to the composition end · <b>Split</b> cuts in two at the given time, keeping source sync via <code>data-media-start</code>.</div>
+
+  <h2>Visual layers</h2>
+  <div class="card" id="visuals"></div>
+  <div class="hint">Hiding writes <code>display:none</code> into the element's style — it affects renders too, so unhide before you export (the banner above tracks them).</div>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+let STATE = null;
+
+const r2 = (n) => Math.round(n * 100) / 100;
+const fmt = (n) => (n === null || n === undefined ? "—" : String(r2(n)));
+
+function toast(msg, err) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.className = "toast show" + (err ? " err" : "");
+  clearTimeout(t._t);
+  t._t = setTimeout(() => (t.className = "toast"), 2200);
+}
+
+async function op(body) {
+  const res = await fetch("/api/op", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const j = await res.json();
+  if (!res.ok || j.error) { toast(j.error || "failed", true); return null; }
+  STATE = j.state;
+  render();
+  return j;
+}
+
+async function load() {
+  STATE = await (await fetch("/api/clips")).json();
+  render();
+}
+
+/* Numeric field: type it, arrow-key it, or drag the LABEL. Deliberately no wheel handler. */
+function numField(label, value, { readonly = false, step = 0.1, min = -1e9, onCommit } = {}) {
+  const wrap = document.createElement("div");
+  wrap.className = "num";
+  const lab = document.createElement("label");
+  lab.textContent = label;
+  const inp = document.createElement("input");
+  inp.type = "text";
+  inp.inputMode = "decimal";
+  inp.value = value === null || value === undefined ? "" : String(r2(value));
+  if (readonly) { inp.readOnly = true; lab.style.cursor = "default"; }
+  wrap.append(lab, inp);
+  if (readonly) return wrap;
+
+  const commit = (v) => {
+    const n = parseFloat(v);
+    if (!Number.isFinite(n) || n < min) { inp.value = String(r2(value)); return; }
+    onCommit(r2(n));
+  };
+  inp.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { inp.blur(); return; }
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    const cur = parseFloat(inp.value) || 0;
+    const mult = e.shiftKey ? 10 : 1;
+    inp.value = String(r2(cur + (e.key === "ArrowUp" ? step : -step) * mult));
+  });
+  inp.addEventListener("blur", () => commit(inp.value));
+
+  // label drag-scrub — the interaction worth keeping
+  let drag = null;
+  lab.addEventListener("pointerdown", (e) => {
+    drag = { x: e.clientX, v: parseFloat(inp.value) || 0 };
+    lab.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  lab.addEventListener("pointermove", (e) => {
+    if (!drag) return;
+    const next = Math.max(min, drag.v + (e.clientX - drag.x) * step);
+    inp.value = String(r2(next));
+  });
+  lab.addEventListener("pointerup", () => {
+    if (!drag) return;
+    drag = null;
+    commit(inp.value);
+  });
+  return wrap;
+}
+
+function timelineBar(clip) {
+  const total = STATE.compDuration || 1;
+  const bar = document.createElement("div");
+  bar.className = "bar";
+  const end = clip.duration === null ? total : clip.start + clip.duration;
+  const over = end > total + 0.01;
+  const fill = document.createElement("div");
+  fill.className = "fill" + (over ? " over" : "");
+  fill.style.left = (Math.max(0, clip.start) / total) * 100 + "%";
+  fill.style.width = Math.min(100, ((Math.min(end, total) - clip.start) / total) * 100) + "%";
+  bar.appendChild(fill);
+  if (over) {
+    const edge = document.createElement("div");
+    edge.className = "edge";
+    edge.style.right = "0";
+    edge.title = "extends past the composition end";
+    bar.appendChild(edge);
+  }
+  bar.title = `${r2(clip.start)}s → ${r2(end)}s` + (over ? `  (${r2(end - total)}s past the end)` : "");
+  return bar;
+}
+
+function render() {
+  const s = STATE;
+  $("#meta").innerHTML =
+    `<b>${s.project}</b> · ${s.compId} · <b>${s.compDuration}s</b> · ${s.width}×${s.height} · ${s.clips.length} clips`;
+
+  // banners
+  const b = $("#banners");
+  b.innerHTML = "";
+  const over = s.clips.filter((c) => c.duration !== null && c.start + c.duration > s.compDuration + 0.01);
+  if (over.length) {
+    const d = document.createElement("div");
+    d.className = "banner warn";
+    d.innerHTML = `<b>${over.length} clip${over.length > 1 ? "s run" : " runs"} past the ${s.compDuration}s composition end</b>
+      — ${over.map((c) => `<code>${c.id}</code> ends at ${r2(c.start + c.duration)}s`).join(", ")}.
+      Their trim handles sit outside the studio timeline, which is why they can't be dragged.`;
+    const fix = document.createElement("button");
+    fix.textContent = "Fit all to composition";
+    fix.onclick = async () => { for (const c of over) await op({ op: "fit", id: c.id }); toast("Trimmed to fit"); };
+    d.appendChild(fix);
+    b.appendChild(d);
+  }
+  const hidden = s.clips.filter((c) => c.hidden);
+  if (hidden.length) {
+    const d = document.createElement("div");
+    d.className = "banner info";
+    d.innerHTML = `<b>${hidden.length} layer${hidden.length > 1 ? "s" : ""} hidden</b> — ${hidden.map((c) => `<code>${c.id}</code>`).join(", ")}. Hidden layers stay hidden in renders.`;
+    const fix = document.createElement("button");
+    fix.textContent = "Show all";
+    fix.onclick = async () => { for (const c of hidden) await op({ op: "hide", id: c.id, on: false }); toast("All layers visible"); };
+    d.appendChild(fix);
+    b.appendChild(d);
+  }
+  const muted = s.clips.filter((c) => c.isMedia && c.volume === 0);
+  if (muted.length) {
+    const d = document.createElement("div");
+    d.className = "banner info";
+    d.innerHTML = `<b>${muted.length} audio clip${muted.length > 1 ? "s" : ""} muted</b> — ${muted.map((c) => `<code>${c.id}</code>`).join(", ")}. Muted clips are silent in renders.`;
+    b.appendChild(d);
+  }
+
+  // mixer
+  const mix = $("#mixer");
+  mix.innerHTML = "";
+  const media = s.clips.filter((c) => c.isMedia && c.id);
+  if (!media.length) mix.innerHTML = '<div class="empty">No &lt;audio&gt; or &lt;video&gt; clips.</div>';
+  for (const c of media) {
+    const row = document.createElement("div");
+    row.className = "row" + (c.volume === 0 ? " dim" : "");
+    const name = document.createElement("div");
+    name.className = "name";
+    name.innerHTML = `<div class="id">${c.id}</div><div class="sub">${c.srcName || ""}</div>`;
+    row.appendChild(name);
+    const tag = document.createElement("span");
+    tag.className = "tag " + c.tag;
+    tag.textContent = c.tag === "video" ? "video (muted)" : "audio";
+    row.appendChild(tag);
+
+    if (c.tag === "video") {
+      const note = document.createElement("div");
+      note.style.cssText = "flex:1;color:var(--dim2);font-size:10.5px";
+      note.textContent = "video elements are always muted — audio lives on a separate <audio> clip";
+      row.appendChild(note);
+    } else {
+      const rng = document.createElement("input");
+      rng.type = "range"; rng.min = 0; rng.max = 100; rng.value = Math.round(c.volume * 100);
+      const lvl = document.createElement("div");
+      lvl.className = "lvl";
+      lvl.textContent = Math.round(c.volume * 100) + "%";
+      rng.oninput = () => (lvl.textContent = rng.value + "%");
+      rng.onchange = () => op({ op: "volume", id: c.id, volume: rng.value / 100 });
+      row.append(rng, lvl);
+
+      const ops = document.createElement("div");
+      ops.className = "ops";
+      const m = document.createElement("button");
+      m.textContent = "M";
+      m.title = "Mute";
+      if (c.volume === 0) m.className = "on";
+      m.onclick = () => op({ op: "mute", id: c.id, on: c.volume !== 0 });
+      const so = document.createElement("button");
+      so.textContent = "S";
+      so.title = "Solo (mute all other audio)";
+      so.onclick = () => op({ op: "solo", id: c.id, on: true });
+      ops.append(m, so);
+      row.appendChild(ops);
+    }
+    mix.appendChild(row);
+  }
+  if (media.filter((c) => c.tag === "audio").length > 1) {
+    const row = document.createElement("div");
+    row.className = "row";
+    row.style.justifyContent = "flex-end";
+    const un = document.createElement("button");
+    un.textContent = "Un-solo / restore all levels";
+    un.onclick = () => op({ op: "solo", id: "__none__", on: false }).then(() => toast("Levels restored"));
+    row.appendChild(un);
+    mix.appendChild(row);
+  }
+
+  // cut & trim
+  const cl = $("#clips");
+  cl.innerHTML = "";
+  const trimmable = s.clips.filter((c) => c.id && c.duration !== null);
+  for (const c of trimmable) {
+    const row = document.createElement("div");
+    row.className = "row";
+    const name = document.createElement("div");
+    name.className = "name";
+    name.innerHTML = `<div class="id">${c.id}</div><div class="sub">track ${c.track ?? "—"} · ${c.tag}</div>`;
+    row.appendChild(name);
+    row.appendChild(timelineBar(c));
+    row.appendChild(numField("start", c.start, {
+      min: 0, onCommit: (v) => op({ op: "set", id: c.id, attrs: { "data-start": v } }),
+    }));
+    row.appendChild(numField("dur", c.duration, {
+      min: 0.1, onCommit: (v) => op({ op: "set", id: c.id, attrs: { "data-duration": v } }),
+    }));
+    row.appendChild(numField("end", c.start + c.duration, { readonly: true }));
+    if (c.isMedia) {
+      row.appendChild(numField("in", c.mediaStart ?? 0, {
+        min: 0, onCommit: (v) => op({ op: "set", id: c.id, attrs: { "data-media-start": v } }),
+      }));
+    }
+    const ops = document.createElement("div");
+    ops.className = "ops";
+    const fit = document.createElement("button");
+    fit.textContent = "Fit";
+    fit.title = `Clamp duration so the clip ends at ${s.compDuration}s`;
+    fit.onclick = () => op({ op: "fit", id: c.id }).then((r) => r && toast(`${c.id} → ${r.duration}s`));
+    ops.appendChild(fit);
+    if (c.isMedia) {
+      const sp = document.createElement("button");
+      sp.textContent = "Split";
+      sp.title = "Split in two at a time you type";
+      sp.onclick = async () => {
+        const mid = r2(c.start + c.duration / 2);
+        const at = prompt(`Split "${c.id}" at what second?\n(between ${r2(c.start)} and ${r2(c.start + c.duration)})`, String(mid));
+        if (at === null) return;
+        const r = await op({ op: "split", id: c.id, at: parseFloat(at) });
+        if (r) toast(`Split → ${r.newId}`);
+      };
+      const del = document.createElement("button");
+      del.textContent = "✕";
+      del.className = "danger";
+      del.title = "Delete clip";
+      del.onclick = async () => {
+        if (!confirm(`Delete clip "${c.id}"? (Undo restores it.)`)) return;
+        await op({ op: "delete", id: c.id });
+        toast(`Deleted ${c.id}`);
+      };
+      ops.append(sp, del);
+    }
+    row.appendChild(ops);
+    cl.appendChild(row);
+  }
+  if (!trimmable.length) cl.innerHTML = '<div class="empty">No clips with data-duration.</div>';
+
+  // visual layers
+  const vs = $("#visuals");
+  vs.innerHTML = "";
+  const visuals = s.clips.filter((c) => !c.isMedia && c.id);
+  if (!visuals.length) vs.innerHTML = '<div class="empty">No visual clips.</div>';
+  for (const c of visuals) {
+    const row = document.createElement("div");
+    row.className = "row" + (c.hidden ? " dim" : "");
+    const name = document.createElement("div");
+    name.className = "name";
+    name.innerHTML = `<div class="id">${c.id}</div><div class="sub">${c.cls || c.tag}</div>`;
+    row.append(name, timelineBar(c));
+    const ops = document.createElement("div");
+    ops.className = "ops";
+    const h = document.createElement("button");
+    h.textContent = c.hidden ? "Hidden" : "Visible";
+    if (c.hidden) h.className = "on";
+    h.onclick = () => op({ op: "hide", id: c.id, on: !c.hidden });
+    ops.appendChild(h);
+    row.appendChild(ops);
+    vs.appendChild(row);
+  }
+}
+
+$("#refresh").onclick = () => load().then(() => toast("Reloaded from disk"));
+$("#undo").onclick = () => op({ op: "undo" }).then((r) => r && toast("Undone"));
+load();
+</script>
+</body>
+</html>

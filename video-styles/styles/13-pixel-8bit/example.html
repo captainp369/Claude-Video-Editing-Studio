@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="../../_shared/fonts/fonts.css">
+<link rel="stylesheet" href="../../_shared/shared.css">
+<style>
+  /* 13 Pixel art 8-bit — the whole frame is a 180x320 canvas scaled 6x, stepped at 8 fps (DESIGN.md §13) */
+  .stage { background: #1A1C2C; }
+  #px { position: absolute; left: 0; top: 0; width: 1080px; height: 1920px; image-rendering: pixelated; }
+  .label { font-family: "Press Start 2P"; font-size: 20px; }
+</style>
+</head>
+<body>
+<div class="stage" data-composition-id="s13" data-start="0" data-duration="6" data-width="1080" data-height="1920">
+  <canvas id="px" width="180" height="320"></canvas>
+  <div class="label"><b>13</b>Pixel art 8-bit</div>
+</div>
+<script src="../../_shared/gsap.min.js"></script>
+<script>
+  const P = { bg: "#1A1C2C", plum: "#5D275D", red: "#B13E53", org: "#EF7D57", yel: "#FFCD75", grn: "#A7F070", tea: "#38B764", dteal: "#257179",
+              navy: "#29366F", blue: "#3B5DC9", sky: "#41A6F6", cyan: "#73EFF7", wht: "#F4F4F4", gry: "#94B0C2", dgry: "#566C86", slate: "#333C57" };
+  const cv = document.getElementById("px"), g = cv.getContext("2d");
+  let s = 3; const rnd = () => ((s = Math.imul(s ^ s >>> 15, 1 | s) + 0x6D2B79F5 | 0) >>> 0) / 4294967296;
+  const stars = Array.from({ length: 40 }, () => [Math.floor(rnd() * 180), Math.floor(rnd() * 200), rnd()]);
+  // text -> hard-edged pixel bitmap (alpha thresholded so it reads as real pixels)
+  const cache = {};
+  function pixText(txt, size, color, weight = 700, family = "Kanit") {
+    const key = txt + size + color;
+    if (cache[key]) return cache[key];
+    const c = document.createElement("canvas"); c.width = 178; c.height = size + 10;
+    const x = c.getContext("2d"); x.font = `${weight} ${size}px ${family}`; x.fillStyle = color; x.textBaseline = "top"; x.fillText(txt, 0, 2);
+    const im = x.getImageData(0, 0, c.width, c.height), d = im.data;
+    let w = 0;
+    for (let i = 0; i < d.length; i += 4) { const on = d[i + 3] > 110; d[i + 3] = on ? 255 : 0; if (on) w = Math.max(w, (i / 4) % c.width); }
+    x.putImageData(im, 0, 0);
+    const out = { c, w: w + 1 };
+    if (document.fonts && document.fonts.check(`${weight} ${size}px ${family}`)) cache[key] = out;
+    return out;
+  }
+  const bot = ["....rr....", "....kk....", ".wwwwwwww.", ".wkkkkkkw.", ".wkckkckw.", ".wkkkkkkw.", ".wwwwwwww.", "...bbbb...", "..bbbbbb..", "..b.bb.b..", "..bbbbbb..", "..k....k.."];
+  const bc = { r: P.red, k: P.bg, w: P.wht, c: P.cyan, b: P.blue };
+  function sprite(x0, y0, sc) { bot.forEach((row, y) => [...row].forEach((ch, x) => { if (bc[ch]) { g.fillStyle = bc[ch]; g.fillRect(x0 + x * sc, y0 + y * sc, sc, sc); } })); }
+  function box(x, y, w, h) { g.fillStyle = P.wht; g.fillRect(x, y, w, h); g.fillStyle = P.navy; g.fillRect(x + 2, y + 2, w - 4, h - 4); g.fillStyle = P.bg; g.fillRect(x + 3, y + 3, w - 6, h - 6); }
+
+  function renderAt(t) {
+    t = Math.floor(t * 8) / 8;                                   // 8 fps stepped motion
+    g.fillStyle = P.bg; g.fillRect(0, 0, 180, 320);
+    stars.forEach(([x, y, k]) => { g.fillStyle = (Math.floor(t * 4 + k * 10) % 3) ? P.dgry : P.gry; g.fillRect(x, y, 1, 1); });
+    // ground tiles
+    for (let x = 0; x < 180; x += 12) { g.fillStyle = (x / 12) % 2 ? P.tea : P.grn; g.fillRect(x, 212, 12, 4); g.fillStyle = P.dteal; g.fillRect(x, 216, 12, 14); }
+    // title drops in
+    const ty = Math.min(28, -20 + t * 96);
+    const a = pixText("AI เขียนโน้ต", 26, P.yel); g.drawImage(a.c, Math.floor((180 - a.w) / 2), Math.floor(ty));
+    if (t > 0.5) { const b = pixText("ถึงตัวเองในอนาคต", 13, P.cyan, 600); g.drawImage(b.c, Math.floor((180 - b.w) / 2), 64); }
+    // robot jumps in, then idles
+    if (t > 1.3) { const k = Math.min(1, (t - 1.3) / 0.6), jump = Math.round(Math.sin(k * Math.PI) * 30), bob = t > 2 ? (Math.floor(t * 4) % 2) : 0;
+      sprite(70, 164 - jump - bob, 4); if (Math.floor(t * 8) % 16 === 0) { g.fillStyle = P.wht; g.fillRect(70 + 3 * 4, 164 + 4 * 4 - bob, 4, 4); g.fillRect(70 + 6 * 4, 164 + 4 * 4 - bob, 4, 4); } }
+    // RPG dialog box types the note
+    if (t > 2.6) {
+      const k = Math.min(1, (t - 2.6) / 0.25); const h = Math.round(64 * k);
+      box(6, 266 - Math.max(6, h) / 2, 168, Math.max(6, h));
+      if (k >= 1) {
+        const l1 = pixText("บอกความจริง", 16, P.wht), l2 = pixText("เฉพาะตอนถูกถาม", 16, P.org);
+        const r1 = Math.min(1, (t - 2.9) / 0.6), r2 = Math.min(1, Math.max(0, (t - 3.6) / 0.7));
+        if (r1 > 0) g.drawImage(l1.c, 0, 0, Math.ceil(l1.w * r1), l1.c.height, 12, 238, Math.ceil(l1.w * r1), l1.c.height);
+        if (r2 > 0) g.drawImage(l2.c, 0, 0, Math.ceil(l2.w * r2), l2.c.height, 12, 262, Math.ceil(l2.w * r2), l2.c.height);
+        if (t > 4.4 && Math.floor(t * 4) % 2) { g.fillStyle = P.yel; g.fillRect(160, 288, 6, 2); g.fillRect(161, 290, 4, 2); g.fillRect(162, 292, 2, 2); }
+      }
+    }
+    // emphasis: a pixel heart/star burst over the robot
+    if (t > 4.6 && t < 5.6) { const r = Math.floor((t - 4.6) * 16); g.fillStyle = P.yel; [[0, -1], [1, 0], [0, 1], [-1, 0], [1, 1], [-1, -1], [1, -1], [-1, 1]].forEach(([dx, dy]) => g.fillRect(90 + dx * r, 150 + dy * r, 2, 2)); }
+  }
+  const tl = gsap.timeline({ paused: true });
+  const clock = { t: 0 };
+  tl.to(clock, { t: 6, duration: 6, ease: "none", onUpdate: () => renderAt(clock.t) }, 0);
+  renderAt(0);
+  window.__timelines = window.__timelines || {};
+  window.__timelines["s13"] = tl;
+</script>
+</body>
+</html>

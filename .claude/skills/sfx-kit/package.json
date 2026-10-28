@@ -1,0 +1,7 @@
+{
+  "name": "sfx-kit",
+  "private": true,
+  "type": "module",
+  "description": "Synthesized UI sound effects placed from a HyperFrames/GSAP timeline",
+  "dependencies": { "puppeteer-core": "24.42.0" }
+}

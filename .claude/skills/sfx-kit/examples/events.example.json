@@ -1,0 +1,13 @@
+{
+ "dur": 6.0,
+ "events": [
+  {"t": 0.2, "type": "pop", "kind": "card"},
+  {"t": 0.9, "type": "type", "dur": 0.8},
+  {"t": 1.8, "type": "count", "dur": 1.6},
+  {"t": 2.2, "type": "draw", "dur": 0.9},
+  {"t": 3.4, "type": "stamp"},
+  {"t": 4.1, "type": "pop", "kind": "photo"},
+  {"t": 4.8, "type": "draw", "dur": 0.6, "hint": "tear"},
+  {"t": 5.4, "type": "marker", "dur": 0.4}
+ ]
+}

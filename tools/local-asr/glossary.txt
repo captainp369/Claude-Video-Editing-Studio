@@ -1,0 +1,12 @@
+# Vocabulary hint passed to Whisper with --glossary (one term per line). Off by default.
+# Keep it short: it shares the decoder's context with the transcript.
+Anthropic
+Claude
+Claude Code
+Sonnet
+Opus
+Fable
+Mythos
+Prompt
+Cache
+Token

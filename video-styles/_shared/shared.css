@@ -1,0 +1,9 @@
+/* shared by every style clip: canvas size + the one common element (label pill) */
+html, body { margin: 0; padding: 0; background: #000; }
+.stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; }
+.label {
+  position: absolute; left: 50%; bottom: 70px; transform: translateX(-50%); z-index: 100;
+  font: 600 30px/1 "Inter", sans-serif; letter-spacing: .04em; white-space: nowrap;
+  padding: 16px 30px; border-radius: 999px; color: #fff; background: rgba(0,0,0,.62);
+}
+.label b { font-weight: 900; margin-right: 10px; }

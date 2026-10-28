@@ -612,6 +612,25 @@ Before you ship any motion graphic, ask:
 
 ---
 
+## 5.5 · Glass-card opacity scales with backdrop complexity
+
+The proven `.glass` recipe — 4-stop white fill `0.18 / 0.10 / 0.06 / 0.16` + `backdrop-filter: blur(60px) saturate(200%)` + 2px white border — was tuned on a **clean talking-head backdrop** (single subject, simple wall). On busier backdrops the underlying detail bleeds through and competes with the card's own text. The card looks "too light to read" because the contrast budget is being spent on noise, not letters.
+
+**Use this matrix to set fill opacity per beat, not per project:**
+
+| Backdrop type | 4-stop white fill | Extra |
+|---|---|---|
+| Talking head, clean wall / paper | `0.18 / 0.10 / 0.06 / 0.16` | Original recipe, default |
+| Talking head, busy room / lots of background objects | `0.22 / 0.14 / 0.10 / 0.20` | +30% across all stops |
+| Screen recording / dense UI (Obsidian graph, IDE, dashboards) | `0.32 / 0.22 / 0.16 / 0.30` | +60–80% — non-negotiable |
+| Bright / white-heavy footage | `0.18 / 0.10 / 0.06 / 0.16` PLUS `background-color: rgba(0,0,0,0.35)` underneath the gradient | A solid mid-gray underbed before the gradient adds the glass shimmer |
+
+**Rule of thumb**: at the beat midpoint, snapshot a frame and try to read every word inside the card from arm's length. If you squint, bump to the next opacity tier. If text reads but the card looks like a flat panel and the "glass" is gone, drop one tier.
+
+The `backdrop-filter: blur(60px)` only works at HTML render time on whatever is *behind the alpha layer at render time*, which is empty/transparent. So the visible "glass" effect lives entirely in the gradient + border + inner highlights — opacity is the only knob. Don't be precious about transparency: a 32% white wash still reads as glass when the border + inner-highlight + chromatic-shimmer pseudo are intact.
+
+---
+
 ## 6 · Anti-patterns (what NOT to do)
 
 - ❌ **Centered, axis-aligned, motionless text fades.** This is the lowest motion-graphics tier. Always add scale, blur, or directional energy.
@@ -626,6 +645,8 @@ Before you ship any motion graphic, ask:
 - ❌ **Forgetting to render a draft and look at it.** Lint passing ≠ design working. **VIEW THE FRAMES.**
 - ❌ **`Math.random()` / `Date.now()` / unseeded PRNGs inside a render loop.** Renders must be deterministic frame-to-frame. Use harmonic hashes instead: `80 + 220 * Math.abs(Math.sin(i*0.7 + 0.3) * Math.cos(i*1.3 + 0.7))` gives "random-looking" reproducible values.
 - ❌ **Leaning on `npx hyperframes add <block>` for benchmark pieces.** The official HyperFrames launch video installs ZERO registry blocks — every scene is hand-built. The registry is for production velocity; hand-built scenes are the reference-quality move. Iterate fast with catalog blocks, then decide which ones deserve a bespoke rebuild for the hero moments.
+- ❌ **Animating `transform` on a `background-clip: text` element with chrome gradient.** When the foreground color is `transparent` and the gradient paints into the text via `-webkit-background-clip: text`, ANY `transform` tween on that same element (or its parent transform chain) can collapse the gradient paint and the text renders as fully invisible — you get an empty glass card with no letters. **The fix is structural, not numerical**: wrap kinetic chars in a non-clipped outer `<span>` for the transform, leave the inner `<span>` for the gradient/clip. Or animate `opacity` only on the clipped element. **Always preview a midpoint frame of any kinetic-typed beat** before declaring the build done — silent gradient breakage is the #1 way "the card appeared but the word didn't."
+- ❌ **Reusing a glass-card opacity tuned for a talking head over a screen recording.** The 4-stop fill at `0.18 / 0.10 / 0.06 / 0.16` is too transparent over busy UI. See §5.5 — opacity scales with backdrop complexity, not with project conventions.
 
 ---
 
